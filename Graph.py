@@ -16,17 +16,15 @@ class Graph:
             return True
         return False
 
-    def DFS(self, u: int) -> None:
-        visit = [False] * self.n
+    def DFS(self, u: int, visit: List) -> None:
         self.__DFS_visit(u, visit)
 
-    def __DFS_visit(self, u: int, visit: List[bool]) -> List[bool]:
+    def __DFS_visit(self, u: int, visit: List[bool]) -> None:
         visit[u] = True
-        print(u, end=' ')
-        for v in self.L[u]:
-            if not visit[v]:
+        #print(u, end=' ')
+        for weight, v in self.L[u]:  # Unpack the tuple correctly
+            if not visit[v]:  # Check if the vertex is visited
                 self.__DFS_visit(v, visit)
-        return visit
     
 
     def BFS(self, u: int) -> None:
@@ -63,13 +61,13 @@ class Graph:
         count = 0
         for u in range(self.n):
             if not visit[u]:
-                self.DFS(u)
+                self.DFS(u, visit)
                 count += 1
         return count
 
     def is_connected(self) -> bool: #es conexo
         visit = [False] * self.n
-        self.DFS(0)
+        self.DFS(0, visit)
         return all(visit)
 
     def path(self, u: int, v: int) -> List[int]:
@@ -202,14 +200,18 @@ class Graph:
 
         return distances[end], path  
        
-g = Graph(5)
+g = Graph(7)
 g.add_edge(0, 1, 10)
 g.add_edge(0, 2, 6)
 g.add_edge(0, 3, 5)
 g.add_edge(1, 3, 15)
 g.add_edge(2, 3, 4)
 g.add_edge(2, 4, 4)
+g.add_edge(5,6,2)
 
-distance, path = g.dijkstra(0, 4)
+distance, path = g.dijkstra(5, 6)
 print(f"Minimum distance from vertex 0 to vertex 3: {distance}")
 print(f"Path: {' -> '.join(map(str, path))}")
+
+print ( g.is_connected())
+print(g.number_of_components())
