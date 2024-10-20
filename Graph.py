@@ -199,6 +199,12 @@ class Graph:
         path.reverse()  
 
         return distances[end], path  
+
+    #def show10 ():
+    #    if(i=1):
+    #        
+    #   else:
+
        
 g = Graph(7)
 g.add_edge(0, 1, 10)
