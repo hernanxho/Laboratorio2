@@ -1,152 +1,49 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any, Set, Dict
 import heapq
+import haversine as h
+import pandas as pd
+
+
+
 
 class Graph:
+
     def __init__(self, n: int, directed: bool = False):
         self.n = n
         self.directed = directed
-        self.L: List[List[Tuple[int, int]]] = [[] for _ in range(n)]  # List of edges (weight, vertex)
+        self.L: List[List[Tuple[int, float]]] = [[] for _ in range(n)]  
+        self.airport_data: Dict[int, Dict] = {}  
+    
+    def add_airport_info(self, idx: int, info: Dict):
+        self.airport_data[idx] = info
 
-
-    def add_edge(self, u: int, v: int, weight: int) -> bool:
+    def add_edge(self, u: int, v: int, lat_u: float, lon_u: float, lat_v: float, lon_v: float) -> bool:
         if 0 <= u < self.n and 0 <= v < self.n:
-            self.L[u].append((weight, v))
+            weight = h.haversine((lat_u, lon_u), (lat_v, lon_v))
+            self.L[u].append((v, weight))
             if not self.directed:
-                self.L[v].append((weight, u))  
+                self.L[v].append((u, weight))
             return True
         return False
-
-    def DFS(self, u: int, visit: List) -> None:
-        self.__DFS_visit(u, visit)
-
-    def __DFS_visit(self, u: int, visit: List[bool]) -> None:
-        visit[u] = True
-        #print(u, end=' ')
-        for weight, v in self.L[u]:  # Unpack the tuple correctly
-            if not visit[v]:  # Check if the vertex is visited
-                self.__DFS_visit(v, visit)
     
 
-    def BFS(self, u: int) -> None:
-        queue = []
-        visit = [False] * self.n
-        visit[u] = True
-        queue.append(u)
-        while len(queue) > 0:
-            u = queue.pop(0)
-            print(u, end=' ')
-            for v in self.L[u]:
-                if not visit[v]:
-                    visit[v] = True
-                    queue.append(v)
-
-    def degree(self, u: int) -> int:
-        if 0 <= u < self.n:
-            return len(self.L[u])
-        return -1
-
-    def min_degree(self) -> int:
-        #Returns the minimum degree of the graph
-        return min(self.degree(u) for u in range(self.n))
-
-    def max_degree(self) -> int:
-        #Returns the maximum degree of the graph
-        return max(self.degree(u) for u in range(self.n))
-
-    def degree_sequence(self) -> List[int]:
-        return sorted((self.degree(u) for u in range(self.n)), reverse=True)
-
-    def number_of_components(self) -> int:
-        visit = [False] * self.n
-        count = 0
-        for u in range(self.n):
-            if not visit[u]:
-                self.DFS(u, visit)
-                count += 1
-        return count
-
-    def is_connected(self) -> bool: #es conexo
-        visit = [False] * self.n
-        self.DFS(0, visit)
-        return all(visit)
-
-    def path(self, u: int, v: int) -> List[int]:
-        visited = [False] * self.n
-        path = []
-        if self.__find_path(u, v, visited, path):
-            return path
-        return []
-
-    def __find_path(self, u: int, v: int, visited: List[bool], path: List[int]) -> bool:
-        visited[u] = True
-        path.append(u)
-        if u == v:
-            return True
-        for neighbor in self.L[u]:
-            if not visited[neighbor]:
-                if self.__find_path(neighbor, v, visited, path):
-                    return True
-        path.pop()
-        return False
-
-    def is_eulerian(self) -> bool:
-        if self.is_connected():
-            return all(self.degree(u) % 2 == 0 for u in range(self.n))
-        return False
-
-    def is_semieulerian(self) -> bool:
-        if self.is_connected():
-            odd_degree_count = sum(1 for u in range(self.n) if self.degree(u) % 2 != 0)
-            return odd_degree_count == 2
-        return False
-
-    def is_r_regular(self, r: int) -> bool:
-        return all(self.degree(u) == r for u in range(self.n))
-
-    def is_complete(self) -> bool:
-        for u in range(self.n):
-            if self.degree(u) != self.n - 1:
-                return False
-        return True
-
-    def is_acyclic(self) -> bool:
-        visited = [False] * self.n
-        parent = [-1] * self.n 
-
-        def dfs_visit(u: int) -> bool:
-            visited[u] = True
-            for v in self.L[u]:
-                if not visited[v]: 
-                    parent[v] = u  
-                    if not dfs_visit(v):
-                        return False
-                elif parent[u] != v:  
-                    return False
-            return True
-
-        for u in range(self.n):
-            if not visited[u]:  
-                if not dfs_visit(u):  
-                    return False
-        return True
-
-    def kruskal(self) -> List[Tuple[int, int, int]]:
+    def kruskal(self):
         edges = []
         for u in range(self.n):
-            for weight, v in self.L[u]:
+            for v, weight in self.L[u]:
+                if u < v:  
                     edges.append((weight, u, v))
-        
-        edges.sort(key=lambda x: x[0])
 
-        parent = list(range(self.n))
+        edges.sort()
+
+        parent = list(range(self.n)) 
         rank = [0] * self.n
 
-        def find(v: int) -> int:
-            if parent[v] != v:
-                parent[v] = find(parent[v])
-            return parent[v]
-
-        def union(u: int, v: int) -> bool:
+        def find(u):
+            if parent[u] != u:
+                parent[u] = find(parent[u])
+            return parent[u]
+        def union(u, v):
             root_u = find(u)
             root_v = find(v)
             if root_u != root_v:
@@ -157,61 +54,143 @@ class Graph:
                 else:
                     parent[root_v] = root_u
                     rank[root_u] += 1
-                return True
-            return False
 
+
+        mst_weight = 0
         mst_edges = []
         for weight, u, v in edges:
-            if union(u, v):
-                mst_edges.append((weight, u, v))
+            if find(u) != find(v):
+                union(u, v)
+                mst_weight += weight
+                mst_edges.append((u, v, weight))
 
-        return mst_edges
+        return mst_weight, mst_edges
 
-    def dijkstra(self, start: int, end: int) -> Tuple[int, List[int]]:
-        distances = [float('inf')] * self.n
-        distances[start] = 0
+    def is_connected(self) -> Tuple[bool, List[Set[int]]]:
+        visited = [False] * self.n
+        components = []
 
-        priority_queue = [(0, start)]
-        previous = [-1] * self.n 
+        def dfs(u, component):
+            visited[u] = True
+            component.add(u)
+            for v, _ in self.L[u]:
+                if not visited[v]:                                 
+                    dfs(v, component)
+                    
+    
+        for u in range(self.n):
+            if not visited[u]:
+                component = set()
+                dfs(u, component, )
+                components.append(component)
 
-        while priority_queue:
-            current_distance, current_vertex = heapq.heappop(priority_queue)
+        is_connected = len(components) == 1
+        return is_connected, components
+    
+    def weights_components (self, components):
+        weights = []
+        for  component in components:
+            weight = 0
+            for  u in component:
+                for i in self.L[u]:
+                    weight = weight + i[1]
+                    print(i[1])
 
-            if current_vertex == end:
-                break
+            weights.append(weight)
+        return weights
 
-            
-            for weight, neighbor in self.L[current_vertex]:
-                distance = current_distance + weight
 
-                
-                if distance < distances[neighbor]:
-                    distances[neighbor] = distance
-                    previous[neighbor] = current_vertex
-                    heapq.heappush(priority_queue, (distance, neighbor))
+    
+    def Dijkstra(self, start: int) -> Dict[int, Tuple[float, List[int]]]:
+        import heapq
+        dist = {i: float('inf') for i in range(self.n)}
+        dist[start] = 0
+        prev = {i: None for i in range(self.n)}
+        pq = [(0, start)]  
 
-        
-        path = []
-        current = end
-        while current != -1:
-            path.append(current)
-            current = previous[current]
-        path.reverse()  
+        while pq:
+            current_dist, u = heapq.heappop(pq)
+            if current_dist > dist[u]:
+                continue
 
-        return distances[end], path  
+            for v, weight in self.L[u]:
+                new_dist = current_dist + weight
+                if new_dist < dist[v]:
+                    dist[v] = new_dist
+                    prev[v] = u
+                    heapq.heappush(pq, (new_dist, v))
+
+        paths = {}
+        for v in range(self.n):
+            if dist[v] < float('inf'):
+                path = []
+                node = v
+                while node is not None:
+                    path.append(node)
+                    node = prev[node]
+                paths[v] = (dist[v], path[::-1])
+
+        return paths
+
+df = pd.read_csv("./data/flights_final.csv")
+
+airport_to_idx = {}
+current_idx = 0
+
+for index, row in df.iterrows():
+    source_code = row['Source Airport Code']
+    dest_code = row['Destination Airport Code']
+
+    if source_code not in airport_to_idx:
+        airport_to_idx[source_code] = current_idx
+        current_idx += 1
+    if dest_code not in airport_to_idx:
+        airport_to_idx[dest_code] = current_idx
+        current_idx += 1
+
+g = Graph(len(airport_to_idx))
+
+# Agregar las aristas y la información de los aeropuertos al grafo
+for index, row in df.iterrows():
+    u = airport_to_idx[row['Source Airport Code']]
+    v = airport_to_idx[row['Destination Airport Code']]
+    lat_u, lon_u = row['Source Airport Latitude'], row['Source Airport Longitude']
+    lat_v, lon_v = row['Destination Airport Latitude'], row['Destination Airport Longitude']
+    
+    g.add_edge(u, v, lat_u, lon_u, lat_v, lon_v)
+
+    # Agregar información del aeropuerto
+    g.add_airport_info(u, {
+        'code': row['Source Airport Code'],
+        'name': row['Source Airport Name'],
+        'city': row['Source Airport City'],
+        'country': row['Source Airport Country'],
+        'latitude': lat_u,
+        'longitude': lon_u
+    })
+    g.add_airport_info(v, {
+        'code': row['Destination Airport Code'],
+        'name': row['Destination Airport Name'],
+        'city': row['Destination Airport City'],
+        'country': row['Destination Airport Country'],
+        'latitude': lat_v,
+        'longitude': lon_v
+    })
        
-g = Graph(7)
-g.add_edge(0, 1, 10)
-g.add_edge(0, 2, 6)
-g.add_edge(0, 3, 5)
-g.add_edge(1, 3, 15)
-g.add_edge(2, 3, 4)
-g.add_edge(2, 4, 4)
-g.add_edge(5,6,2)
+g.n = len(g.L)
+#g.add_edge()
 
-distance, path = g.dijkstra(5, 6)
-print(f"Minimum distance from vertex 0 to vertex 3: {distance}")
-print(f"Path: {' -> '.join(map(str, path))}")
+#distance, path = g.dijkstra(5, 6)
+#print(f"Minimum distance from vertex 0 to vertex 3: {distance}")
+#print(f"Path: {' -> '.join(map(str, path))}")
 
-print ( g.is_connected())
-print(g.number_of_components())
+
+conection, n_components = g.is_connected()
+print(f"Number of connected components: {len(n_components)}")
+#print(g.L[1])
+print (g.weights_components(n_components))
+#print(n_components)
+#print(g.airport_data[2565], g.airport_data[2566])
+#mst_weight, mst_edges = g.kruskal()
+#print(mst_edges)
+

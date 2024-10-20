@@ -1,7 +1,7 @@
 import tkinter as tk
 import mapa as m
 from typing import Any
-
+from Graph import *
 class GuiClass :
 
     
@@ -59,7 +59,16 @@ class GuiClass :
           self.deletesFrame(self.mainFrame)
           self.startFrame(30,200)
           self.Info=tk.Frame(self.mainFrame, bg="#FFFACD", highlightbackground="black", highlightthickness=2)
-          self.Info.place(x=0, y=0, width=1196, height=767)
+          self.Info.place(x=0, y=0, width=1196, height=767)   
+
+          self.Titulo = tk.Label(self.Info, text = "INFORMACIÓN \n  GRAFO", highlightbackground="black", highlightthickness=2, font = ("Bold", 30) )
+          self.Titulo.place(x=1196 / 2, y=100, width= 500, height = 100,  anchor=tk.CENTER)
+
+          ms = "¿El grafo es conexo?:    " + str(conection)+ "\nEl numero de vértices del grafo es: " + str(g.n)  + "\nEl numero de componentes son:   " + str(len(n_components)) + "\nEl numero de vertices en el componente #1:   " +  str(len(n_components[0])) + "\nEl numero de vertices en el componente #2:    "  + str(len(n_components[1])) + "\nEl numero de vertices en el componente #3:   "  + str(len(n_components[2])) + "\nEl numero de vertices en el componente #4:    "  + str(len(n_components[3])) + "\nEl numero de vertices en el componente #5:   "  + str(len(n_components[4])) + "\nEl numero de vertices en el componente #6:    "  + str(len(n_components[5])) + "\nEl numero de vertices en el componente #7:   "  + str(len (n_components[6]))
+
+          self.informacion = tk.Label(self.Info, text = ""+ ms, highlightbackground="black", highlightthickness=2, font = ("Arial", 19) )
+          self.informacion.place(x=1196 / 2, y=450, width= 800, height = 500,  anchor=tk.CENTER)
+
     
     def codigo(self):
           

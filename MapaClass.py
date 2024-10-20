@@ -10,7 +10,7 @@ class Mapa:
     
     def agregar(self):
         for index, row in df.iterrows():
-            nuevo_aeropuerto = Aeropuerto(row['Source Airport Name'],row['Source Airport Latitude'],row['Source Airport Longitude'])
+            nuevo_aeropuerto = Aeropuerto(row['Source Airport Name'], row ["Source Airport Code"], row["Source Airport City"], row["Source Airport Country"],row['Source Airport Latitude'],row['Source Airport Longitude'])
             self.aeropuertos.append(nuevo_aeropuerto)
     
     #def agregar_data(self):
