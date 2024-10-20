@@ -3,7 +3,7 @@ import heapq
 import haversine as h
 import pandas as pd
 
-
+df = pd.read_csv("./data/flights_final.csv")
 
 
 class Graph:
@@ -11,7 +11,7 @@ class Graph:
     def __init__(self, n: int, directed: bool = False):
         self.n = n
         self.directed = directed
-        self.L: List[List[Tuple[int, float]]] = [[] for _ in range(n)]  
+        self.L: List[List[Tuple[int, float]]] = [[] for _ in range(n)]   #(vertix, weight)
         self.airport_data: Dict[int, Dict] = {}  
     
     def add_airport_info(self, idx: int, info: Dict):
@@ -66,37 +66,38 @@ class Graph:
 
         return mst_weight, mst_edges
 
-    def is_connected(self) -> Tuple[bool, List[Set[int]]]:
+    def is_connected(self) -> Tuple[bool, List[List[int]]]:
         visited = [False] * self.n
         components = []
 
         def dfs(u, component):
             visited[u] = True
-            component.add(u)
+            component.append(u)  # Use a list to maintain order
             for v, _ in self.L[u]:
-                if not visited[v]:                                 
+                if not visited[v]:
                     dfs(v, component)
-                    
-    
+
         for u in range(self.n):
             if not visited[u]:
-                component = set()
-                dfs(u, component, )
+                component = []
+                dfs(u, component)
                 components.append(component)
 
         is_connected = len(components) == 1
         return is_connected, components
-    
-    def weights_components (self, components):
-        weights = []
-        for  component in components:
-            weight = 0
-            for  u in component:
-                for i in self.L[u]:
-                    weight = weight + i[1]
-                    print(i[1])
 
-            weights.append(weight)
+    def weights_components(self, components: List[List[int]]) -> List[float]:
+        weights = []
+        for component in components:
+            weight = 0
+            for i in range(len(component) - 1):
+                u = component[i]
+                v = component[i + 1]
+                for edge in self.L[u]:
+                    if edge[0] == v:  
+                        weight += edge[1]  
+                        break  
+            weights.append(weight)  
         return weights
 
 
@@ -131,16 +132,28 @@ class Graph:
                 paths[v] = (dist[v], path[::-1])
 
         return paths
+    
+    def obtener_info(self, code: str):
+        code = code.strip().upper()
+        
+        if code in airport_to_idx:
+            idx = airport_to_idx[code]
+            if idx in self.airport_data:
+                return self.airport_data[idx]
+            else:
+                return "No information available for this airport."
+        else:
+            return "Airport code does not exist."
 
-df = pd.read_csv("./data/flights_final.csv")
 
-airport_to_idx = {}
+airport_to_idx = dict()
 current_idx = 0
 
 for index, row in df.iterrows():
     source_code = row['Source Airport Code']
     dest_code = row['Destination Airport Code']
 
+    # Asignar índices a los aeropuertos si aún no lo tienen
     if source_code not in airport_to_idx:
         airport_to_idx[source_code] = current_idx
         current_idx += 1
@@ -148,7 +161,9 @@ for index, row in df.iterrows():
         airport_to_idx[dest_code] = current_idx
         current_idx += 1
 
-g = Graph(len(airport_to_idx))
+# Crear el grafo con el número total de aeropuertos(aun no se muestra,ok?)
+n_airports = len(airport_to_idx)
+g = Graph(n_airports)
 
 # Agregar las aristas y la información de los aeropuertos al grafo
 for index, row in df.iterrows():
@@ -176,8 +191,9 @@ for index, row in df.iterrows():
         'latitude': lat_v,
         'longitude': lon_v
     })
-       
-g.n = len(g.L)
+
+
+           
 #g.add_edge()
 
 #distance, path = g.dijkstra(5, 6)

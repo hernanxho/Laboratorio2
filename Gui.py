@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 import mapa as m
 from typing import Any
 from Graph import *
@@ -81,7 +82,7 @@ class GuiClass :
           self.codigotext = tk.Entry(self.Codigo,width=30, font=("Arial",40))
           self.codigotext.place(x=160,y=200)
           
-          self.infoAereopuerto=tk.Button(self.Codigo,text="Informacion \n aereopuerto",font = ("Bold", 15))
+          self.infoAereopuerto=tk.Button(self.Codigo,text="Informacion \n aereopuerto",font = ("Bold", 15), command=lambda:self.mostrar_aeropuerto(self.codigotext.get()))
           self.infoAereopuerto.place(x=160,y=400,height=80,width=200)
           
           self.infoCaminosAereopuertos=tk.Button(self.Codigo,text="Caminos \n aereopuertos",font = ("Bold", 15))
@@ -95,10 +96,23 @@ class GuiClass :
 
           self.mostrarCamino=tk.Button(self.Codigo,text="Mostar Camino \n minimo",font = ("Bold", 15))
           self.mostrarCamino.place_forget()
+
+          
+    def  mostrar_aeropuerto(self, code):
+          ms = g.obtener_info(str(code))
+          if ms == "Airport code does not exist.":
+                self.informacion = messagebox.showinfo("INFO", "No existe")
+          else:
+                self.informacion = messagebox.showinfo("INFO", "La información del aeropuerto con el codigo " + ms["code"]  + " es:\n" + "Nombre: " + ms["name"] + "\nLatitud: " + str(ms["latitude"]) + "\nLongitud: " + str(ms["longitude"]) + "\nPais: " + ms["country"]+ "\nCiudad: " + ms["city"])
+
+
     
     def mostrarEntrada(self):
           self.mostrarCamino.place(x=510,y=600,height=80,width=200)
           self.codigotext2.place(x=160,y=300)
+      
+          
+
               
 
 GuiClass()
