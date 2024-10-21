@@ -27,21 +27,20 @@ class Graph:
         return False
     
 
-    def kruskal(self):
+    def kruskal(self): #kruskal que retorna peso del subgrafo generado y las aristas usadas
         edges = []
         for u in range(self.n):
             for v, weight in self.L[u]:
-                if u < v:  # To avoid adding the same edge twice
                     edges.append((weight, u, v))
 
-        edges.sort()  # Sort edges based on weight
+        edges.sort() 
 
         parent = list(range(self.n))
         rank = [0] * self.n
 
         def find(u):
             if parent[u] != u:
-                parent[u] = find(parent[u])  # Path compression
+                parent[u] = find(parent[u])  
             return parent[u]
 
         def union(u, v):
@@ -59,14 +58,14 @@ class Graph:
         mst_weight = 0
         mst_edges = []
         for weight, u, v in edges:
-            if find(u) != find(v):  # If u and v are in different components
-                union(u, v)  # Union the components
-                mst_weight += weight  # Add weight to MST
-                mst_edges.append((u, v, weight))  # Store the edge in the MST
+            if find(u) != find(v):  
+                union(u, v)  
+                mst_weight += weight  
+                mst_edges.append((u, v, weight))  
 
         return mst_weight, mst_edges
 
-    def is_connected(self) -> Tuple[bool, List[List[int]]]:
+    def is_connected(self) -> Tuple[bool, List[List[int]]]: # Retorna un booleano sobre si es conexo y una lista tuplas de los vertices de cada componente
         visited = [False] * self.n
         components = []
 
@@ -86,30 +85,18 @@ class Graph:
         is_connected = len(components) == 1
         return is_connected, components
 
-    def weights_components(self, components: List[List[int]]) -> List[float]:
-        weights = []
-        for component in components:
-            weight = 0
-            for i in range(len(component) - 1):
-                u = component[i]
-                v = component[i + 1]
-                for edge in self.L[u]:
-                    if edge[0] == v:  
-                        weight += edge[1]  
-                        break  
-            weights.append(weight)  
-        return weights
 
 
     
-    def Dijkstra(self, start: int) -> Dict[int, Tuple[float, List[int]]]:
+    def Dijkstra(self, start: int) -> Dict[int, Tuple[float, List[int]]]:  # Dijkstra desde un v1 y retorna un diccionario donde la key es el vertice con el que busco caminno minimo
+                                                                         # y el valor es una tupla con el peso del camino minimo y la lista de los vertices que generan el camino      
+
         dist = {i: float('inf') for i in range(self.n)}
         dist[start] = 0
         prev = {i: None for i in range(self.n)}
         visited = [False] * self.n
 
         for _ in range(self.n):
-            # Find the unvisited node with the smallest distance
             min_dist = float('inf')
             u = -1
             for i in range(self.n):
@@ -117,19 +104,18 @@ class Graph:
                     min_dist = dist[i]
                     u = i
             
-            if u == -1:  # All reachable nodes are visited
+            if u == -1:  
                 break
             
             visited[u] = True
 
             for v, weight in self.L[u]:
-                if not visited[v]:  # Only consider unvisited nodes
+                if not visited[v]: 
                     new_dist = dist[u] + weight
                     if new_dist < dist[v]:
                         dist[v] = new_dist
                         prev[v] = u
 
-        # Construct the paths
         paths = {}
         for v in range(self.n):
             if dist[v] < float('inf'):
@@ -138,28 +124,23 @@ class Graph:
                 while node is not None:
                     path.append(node)
                     node = prev[node]
-                paths[v] = (dist[v], path[::-1])  # Reverse the path
+                paths[v] = (dist[v], path[::-1])  
 
         return paths
     
-    def mst_weight_per_component(self) -> Dict[int, float]:
-        # Check if the graph is connected
+    def mst_weight_per_component(self) -> Dict[int, float]: #peso de cada componente
         is_connected, components = self.is_connected()
 
         if is_connected:
-            # If connected, calculate the complete MST
             mst_weight, _ = self.kruskal()
-            return {0: mst_weight}  # Return a dictionary with a single MST
+            return {0: mst_weight} 
 
         else:
-            # If disconnected, calculate the MST for each component
             component_weights = {}
             for idx, component in enumerate(components):
-                # Create a subgraph with only the nodes of this component
                 subgraph = Graph(len(component))
                 node_mapping = {node: i for i, node in enumerate(component)}
 
-                # Add edges to the subgraph corresponding to the original graph
                 for u in component:
                     for v, weight in self.L[u]:
                         if v in component:
@@ -168,11 +149,9 @@ class Graph:
                                                         self.dataGraph[u]['longitude'], 
                                                         self.dataGraph[v]['latitude'], 
                                                         self.dataGraph[v]['longitude'])
-
-                # Calculate the MST for this component
-                mst_weight, _ = subgraph.kruskal()
+                mst_weight, _ = subgraph.kruskal() #peso de cada subgrafo
                 component_weights[idx+1] = mst_weight
-                print(f"Peso del MST para la componente {idx}: {mst_weight:.2f}")
+                #print(f"Peso del MST para la componente {idx}: {mst_weight:.2f}")  esto fue nada mas para el debugging
 
             return component_weights
     

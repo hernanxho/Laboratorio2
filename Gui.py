@@ -69,7 +69,7 @@ class GuiClass :
                 peso_total += pesos[i]     
 
           print(pesos)
-          ms = "El peso total de los arbol de expansión mínima es:    " + str(peso_total)+ "\nEl peso del componente #1 del arbol de expansión mínima es" +  str(pesos[1]) + "\nEl peso del componente #2 del arbol de  expansión mínima es" +  str(pesos[2]) + "\nEl peso  del componente #3 del arbol de expansión mínima es" +  str(pesos [3]) + "\nEl peso del componente #4 del arbol de expansión mínima  es" +  str(pesos[4]) + "\nEl peso del componente #5  del arbol de expansión mínima es" +  str(pesos[5]) +  "\nEl peso del componente #6 del arbol de expansión mínima es" +    str(pesos[6]) + "\nEl peso del componente #7 del arbol  de expansión mínima es" +  str(pesos[7]) 
+          ms = "El peso total de los arbol de expansión mínima es:    " + str(peso_total)+ "\nEl peso del componente #1 del arbol de expansión mínima es: " +  str(pesos[1]) + "\nEl peso del componente #2 del arbol de  expansión mínima es: " +  str(pesos[2]) + "\nEl peso  del componente #3 del arbol de expansión mínima es: " +  str(pesos [3]) + "\nEl peso del componente #4 del arbol de expansión mínima  es: " +  str(pesos[4]) + "\nEl peso del componente #5  del arbol de expansión mínima es: " +  str(pesos[5]) +  "\nEl peso del componente #6 del arbol de expansión mínima es: " +    str(pesos[6]) + "\nEl peso del componente #7 del arbol  de expansión mínima es: " +  str(pesos[7]) 
 
           self.weight = tk.Label(self.Peso, text = ""+ ms, highlightbackground="black", highlightthickness=2, font = ("Arial", 19) )
           self.weight.place(x=1196 / 2, y=450, width= 1000, height = 500,  anchor=tk.CENTER)
@@ -113,7 +113,7 @@ class GuiClass :
           self.codigotext2 = tk.Entry(self.Codigo,width=30, font=("Arial",40))
           self.codigotext2.place_forget()
 
-          self.mostrarCamino=tk.Button(self.Codigo,text="Mostar Camino \n minimo",font = ("Bold", 15), command= lambda: self.findMinPath(self.codigotext.get(),self.codigotext2.get()))
+          self.mostrarCamino=tk.Button(self.Codigo,text="Mostar Camino \n minimo",font = ("Bold", 15), command= lambda: self.findMinPath(self.codigotext.get().strip(),self.codigotext2.get().strip()))
           self.mostrarCamino.place_forget()
 
           
@@ -130,16 +130,13 @@ class GuiClass :
           self.mostrarCamino.place(x=510,y=600,height=80,width=200)
           self.codigotext2.place(x=160,y=300)
 
-    def mostrar_caminos_aeropuertos(self,code):
+    def mostrar_caminos_aeropuertos(self,code): #Los 10 maximos caminos minimos
             total_distances = g.Dijkstra(indexAirport[code])
             distances = [(node, value[0]) for node, value in total_distances.items()]
-            # Step 2: Sort distances in descending order
             distances.sort(key=lambda x: x[1], reverse=True)
 
-            # Step 3: Select the top 5 largest distances
             ten_distances = distances[:10]
 
-            # Display the results
             i=1
             ms ="#AEROPUERTO MAS ALEJADO\n\n"
 
@@ -154,29 +151,30 @@ class GuiClass :
                   i+=1
             self.ten_label = messagebox.showinfo("10 aeropuertos mas alejados", ms)
 
-    def findMinPath(self, v1, v2):
+    def findMinPath(self, v1, v2): #El min path entre v1 y v2
           paths =  g.Dijkstra(indexAirport[v1])
           print(paths)
           i=1
           ms ="#AEROPUERTOS DEL CAMINO MINIMO\n\n"
-          if indexAirport[v2] in paths:
-            for airport in paths[indexAirport[v2]][1]:
-                        ms += (f"#{i}: Nombre: {g.dataGraph[airport]['name']}, "
-                              f"Codigo: {g.dataGraph[airport]['code']}, "
-                              f"Latitud: {g.dataGraph[airport]['latitude']}, "
-                              f"Longitud: {g.dataGraph[airport]['longitude']}, "
-                              f"Pais: {g.dataGraph[airport]['country']}, "
-                              f"Ciudad: {g.dataGraph[airport]['city']}\n\n")
-                        coordenadas.append((g.dataGraph[airport]['latitude'],g.dataGraph[airport]['longitude']))
-                        nombres.append(g.dataGraph[airport]['name'])
-                        i+=1
-            m.generadorLineasMapa(coordenadas,nombres)
-            self.minAirports = messagebox.showinfo("Camino  minimo", ms)
+          try:
+            if indexAirport[v2] in paths:
+                  for airport in paths[indexAirport[v2]][1]:
+                              ms += (f"#{i}: Nombre: {g.dataGraph[airport]['name']}, "
+                                    f"Codigo: {g.dataGraph[airport]['code']}, "
+                                    f"Latitud: {g.dataGraph[airport]['latitude']}, "
+                                    f"Longitud: {g.dataGraph[airport]['longitude']}, "
+                                    f"Pais: {g.dataGraph[airport]['country']}, "
+                                    f"Ciudad: {g.dataGraph[airport]['city']}\n\n")
+                              coordenadas.append((g.dataGraph[airport]['latitude'],g.dataGraph[airport]['longitude']))
+                              nombres.append(g.dataGraph[airport]['name'])
+                              i+=1
+                  m.generadorLineasMapa(coordenadas,nombres)
+                  self.minAirports = messagebox.showinfo("Camino  minimo", ms)
 
-            print(coordenadas)
+                  print(coordenadas)
             
             
-          else:
+          except Exception as e:
             self.minAirports = messagebox.showerror("ERROR", "NO HAY CAMINO")
 
 
