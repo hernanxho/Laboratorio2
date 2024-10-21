@@ -11,7 +11,7 @@ class Graph:
     def __init__(self, n: int, directed: bool = False):
         self.n = n
         self.directed = directed
-        self.L: List[List[Tuple[int, float]]] = [[] for _ in range(n)]  
+        self.L: List[List[Tuple[int, float]]] = [[] for _ in range(n)]  # tuple[adyacente, peso]
         self.airport_data: Dict[int, Dict] = {}  
     
     def add_airport_info(self, idx: int, info: Dict):
@@ -101,36 +101,58 @@ class Graph:
 
 
     
-    def Dijkstra(self, start: int) -> Dict[int, Tuple[float, List[int]]]:
-        import heapq
-        dist = {i: float('inf') for i in range(self.n)}
-        dist[start] = 0
-        prev = {i: None for i in range(self.n)}
-        pq = [(0, start)]  
+    def dijkstra(self, airport_id: int) -> Tuple[List[float], List[int]]:
+        # Verificar si el aeropuerto existe en el diccionario
+        if airport_id not in self.airport_data:
+            raise ValueError(f"El aeropuerto con ID {airport_id} no existe en el diccionario airport_data.")
+        
+        # Inicializar las distancias a infinito para todos los nodos
+        distances = [float('inf')] * self.n
+        # Inicializar la lista de padres con None
+        parents = [None] * self.n
+        
+        # Obtener el índice del nodo que corresponde al aeropuerto
+        start_node = airport_id
+        distances[start_node] = 0  # La distancia desde el nodo inicial es 0
 
-        while pq:
-            current_dist, u = heapq.heappop(pq)
-            if current_dist > dist[u]:
-                continue
+        # Crear un conjunto de nodos no visitados (solo visitaremos la componente conexa)
+        unvisited = set(range(self.n))
+        visited = set()  # Conjunto para los nodos que ya hemos visitado
 
-            for v, weight in self.L[u]:
-                new_dist = current_dist + weight
-                if new_dist < dist[v]:
-                    dist[v] = new_dist
-                    prev[v] = u
-                    heapq.heappush(pq, (new_dist, v))
+        while unvisited:
+            # Encontrar el nodo no visitado con la distancia mínima dentro de la componente conexa
+            current_node = None
+            for node in unvisited:
+                if node in visited:  # Solo visitamos los nodos alcanzables
+                    continue
+                if current_node is None:
+                    current_node = node
+                elif distances[node] < distances[current_node]:
+                    current_node = node
 
-        paths = {}
-        for v in range(self.n):
-            if dist[v] < float('inf'):
-                path = []
-                node = v
-                while node is not None:
-                    path.append(node)
-                    node = prev[node]
-                paths[v] = (dist[v], path[::-1])
+            # Si la distancia mínima es infinita, significa que no hay más nodos alcanzables
+            if current_node is None or distances[current_node] == float('inf'):
+                break
 
-        return paths
+            # Marcar el nodo actual como visitado
+            visited.add(current_node)
+
+            # Explorar los vecinos del nodo actual
+            for neighbor, weight in self.L[current_node]:
+                if neighbor in visited:
+                    continue  # Solo actualizamos nodos no visitados
+                new_distance = distances[current_node] + weight
+                if new_distance < distances[neighbor]:
+                    distances[neighbor] = new_distance
+                    parents[neighbor] = current_node  # Actualizar el padre del vecino
+
+            # Eliminar el nodo actual de los no visitados
+            unvisited.remove(current_node)
+
+        # Opcional: Ajustar las distancias a 'inf' para los nodos que no están en la componente conexa
+        # y ajustar padres a None si no son alcanzables
+        #return ([dist if dist != float('inf') else None for dist in distances], parents)
+        return(distances, parents)
 
 df = pd.read_csv("./data/flights_final.csv")
 
@@ -149,6 +171,7 @@ for index, row in df.iterrows():
         current_idx += 1
 
 g = Graph(len(airport_to_idx))
+
 
 # Agregar las aristas y la información de los aeropuertos al grafo
 for index, row in df.iterrows():
@@ -184,13 +207,21 @@ g.n = len(g.L)
 #print(f"Minimum distance from vertex 0 to vertex 3: {distance}")
 #print(f"Path: {' -> '.join(map(str, path))}")
 
-
 conection, n_components = g.is_connected()
-print(f"Number of connected components: {len(n_components)}")
+#print(f"Number of connected components: {len(n_components)}")
 #print(g.L[1])
-print (g.weights_components(n_components))
+#print (g.weights_components(n_components))
 #print(n_components)
 #print(g.airport_data[2565], g.airport_data[2566])
 #mst_weight, mst_edges = g.kruskal()
 #print(mst_edges)
 
+g.airport_data[0] = {"name": "Airport A"}
+g.airport_data[1] = {"name": "Airport B"}
+g.airport_data[2] = {"name": "Airport C"}
+g.airport_data[3] = {"name": "Airport D"}
+g.airport_data[4] = {"name": "Airport E"}
+g.airport_data[5] = {"name": "Airport F"}
+
+distances_from_airport_0 = g.dijkstra(airport_to_idx['BMY'])
+print(distances_from_airport_0)
