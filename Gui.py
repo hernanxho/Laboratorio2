@@ -3,8 +3,12 @@ from tkinter import messagebox
 import mapa as m
 from typing import Any
 from Graph import *
+
+coordenadas =[]
+nombres = []
 class GuiClass :
 
+    
     
     def __init__(self):
         self.gui = tk.Tk()
@@ -163,11 +167,18 @@ class GuiClass :
                               f"Longitud: {g.dataGraph[airport]['longitude']}, "
                               f"Pais: {g.dataGraph[airport]['country']}, "
                               f"Ciudad: {g.dataGraph[airport]['city']}\n\n")
+                        coordenadas.append((g.dataGraph[airport]['latitude'],g.dataGraph[airport]['longitude']))
+                        nombres.append(g.dataGraph[airport]['name'])
                         i+=1
+            m.generadorLineasMapa(coordenadas,nombres)
             self.minAirports = messagebox.showinfo("Camino  minimo", ms)
+
+            print(coordenadas)
+            
             
           else:
             self.minAirports = messagebox.showerror("ERROR", "NO HAY CAMINO")
+
 
           
 
