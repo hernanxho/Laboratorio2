@@ -12,10 +12,10 @@ class Graph:
         self.n = n
         self.directed = directed
         self.L: List[List[Tuple[int, float]]] = [[] for _ in range(n)]   #(vertix, weight)
-        self.airport_data: Dict[int, Dict] = {}  
+        self.dataGraph: Dict[int, Dict] = {}  
     
-    def add_airport_info(self, idx: int, info: Dict):
-        self.airport_data[idx] = info
+    def infoAirport(self, idx: int, info: Dict):
+        self.dataGraph[idx] = info
 
     def add_edge(self, u: int, v: int, lat_u: float, lon_u: float, lat_v: float, lon_v: float) -> bool:
         if 0 <= u < self.n and 0 <= v < self.n:
@@ -31,18 +31,19 @@ class Graph:
         edges = []
         for u in range(self.n):
             for v, weight in self.L[u]:
-                if u < v:  
+                if u < v:  # To avoid adding the same edge twice
                     edges.append((weight, u, v))
 
-        edges.sort()
+        edges.sort()  # Sort edges based on weight
 
-        parent = list(range(self.n)) 
+        parent = list(range(self.n))
         rank = [0] * self.n
 
         def find(u):
             if parent[u] != u:
-                parent[u] = find(parent[u])
+                parent[u] = find(parent[u])  # Path compression
             return parent[u]
+
         def union(u, v):
             root_u = find(u)
             root_v = find(v)
@@ -55,14 +56,13 @@ class Graph:
                     parent[root_v] = root_u
                     rank[root_u] += 1
 
-
         mst_weight = 0
         mst_edges = []
         for weight, u, v in edges:
-            if find(u) != find(v):
-                union(u, v)
-                mst_weight += weight
-                mst_edges.append((u, v, weight))
+            if find(u) != find(v):  # If u and v are in different components
+                union(u, v)  # Union the components
+                mst_weight += weight  # Add weight to MST
+                mst_edges.append((u, v, weight))  # Store the edge in the MST
 
         return mst_weight, mst_edges
 
@@ -72,7 +72,7 @@ class Graph:
 
         def dfs(u, component):
             visited[u] = True
-            component.append(u)  # Use a list to maintain order
+            component.append(u)
             for v, _ in self.L[u]:
                 if not visited[v]:
                     dfs(v, component)
@@ -103,24 +103,33 @@ class Graph:
 
     
     def Dijkstra(self, start: int) -> Dict[int, Tuple[float, List[int]]]:
-        import heapq
         dist = {i: float('inf') for i in range(self.n)}
         dist[start] = 0
         prev = {i: None for i in range(self.n)}
-        pq = [(0, start)]  
+        visited = [False] * self.n
 
-        while pq:
-            current_dist, u = heapq.heappop(pq)
-            if current_dist > dist[u]:
-                continue
+        for _ in range(self.n):
+            # Find the unvisited node with the smallest distance
+            min_dist = float('inf')
+            u = -1
+            for i in range(self.n):
+                if not visited[i] and dist[i] < min_dist:
+                    min_dist = dist[i]
+                    u = i
+            
+            if u == -1:  # All reachable nodes are visited
+                break
+            
+            visited[u] = True
 
             for v, weight in self.L[u]:
-                new_dist = current_dist + weight
-                if new_dist < dist[v]:
-                    dist[v] = new_dist
-                    prev[v] = u
-                    heapq.heappush(pq, (new_dist, v))
+                if not visited[v]:  # Only consider unvisited nodes
+                    new_dist = dist[u] + weight
+                    if new_dist < dist[v]:
+                        dist[v] = new_dist
+                        prev[v] = u
 
+        # Construct the paths
         paths = {}
         for v in range(self.n):
             if dist[v] < float('inf'):
@@ -129,24 +138,58 @@ class Graph:
                 while node is not None:
                     path.append(node)
                     node = prev[node]
-                paths[v] = (dist[v], path[::-1])
+                paths[v] = (dist[v], path[::-1])  # Reverse the path
 
         return paths
+    
+    def mst_weight_per_component(self) -> Dict[int, float]:
+        # Check if the graph is connected
+        is_connected, components = self.is_connected()
+
+        if is_connected:
+            # If connected, calculate the complete MST
+            mst_weight, _ = self.kruskal()
+            return {0: mst_weight}  # Return a dictionary with a single MST
+
+        else:
+            # If disconnected, calculate the MST for each component
+            component_weights = {}
+            for idx, component in enumerate(components):
+                # Create a subgraph with only the nodes of this component
+                subgraph = Graph(len(component))
+                node_mapping = {node: i for i, node in enumerate(component)}
+
+                # Add edges to the subgraph corresponding to the original graph
+                for u in component:
+                    for v, weight in self.L[u]:
+                        if v in component:
+                            added = subgraph.add_edge(node_mapping[u], node_mapping[v], 
+                                                        self.dataGraph[u]['latitude'], 
+                                                        self.dataGraph[u]['longitude'], 
+                                                        self.dataGraph[v]['latitude'], 
+                                                        self.dataGraph[v]['longitude'])
+
+                # Calculate the MST for this component
+                mst_weight, _ = subgraph.kruskal()
+                component_weights[idx+1] = mst_weight
+                print(f"Peso del MST para la componente {idx}: {mst_weight:.2f}")
+
+            return component_weights
     
     def obtener_info(self, code: str):
         code = code.strip().upper()
         
-        if code in airport_to_idx:
-            idx = airport_to_idx[code]
-            if idx in self.airport_data:
-                return self.airport_data[idx]
+        if code in indexAirport:
+            idx = indexAirport[code]
+            if idx in self.dataGraph:
+                return self.dataGraph[idx]
             else:
                 return "No information available for this airport."
         else:
             return "Airport code does not exist."
 
 
-airport_to_idx = dict()
+indexAirport = dict()
 current_idx = 0
 
 for index, row in df.iterrows():
@@ -154,28 +197,28 @@ for index, row in df.iterrows():
     dest_code = row['Destination Airport Code']
 
     # Asignar índices a los aeropuertos si aún no lo tienen
-    if source_code not in airport_to_idx:
-        airport_to_idx[source_code] = current_idx
+    if source_code not in indexAirport:
+        indexAirport[source_code] = current_idx
         current_idx += 1
-    if dest_code not in airport_to_idx:
-        airport_to_idx[dest_code] = current_idx
+    if dest_code not in indexAirport:
+        indexAirport[dest_code] = current_idx
         current_idx += 1
 
 # Crear el grafo con el número total de aeropuertos(aun no se muestra,ok?)
-n_airports = len(airport_to_idx)
+n_airports = len(indexAirport)
 g = Graph(n_airports)
 
 # Agregar las aristas y la información de los aeropuertos al grafo
 for index, row in df.iterrows():
-    u = airport_to_idx[row['Source Airport Code']]
-    v = airport_to_idx[row['Destination Airport Code']]
+    u = indexAirport[row['Source Airport Code']]
+    v = indexAirport[row['Destination Airport Code']]
     lat_u, lon_u = row['Source Airport Latitude'], row['Source Airport Longitude']
     lat_v, lon_v = row['Destination Airport Latitude'], row['Destination Airport Longitude']
     
     g.add_edge(u, v, lat_u, lon_u, lat_v, lon_v)
 
     # Agregar información del aeropuerto
-    g.add_airport_info(u, {
+    g.infoAirport(u, {
         'code': row['Source Airport Code'],
         'name': row['Source Airport Name'],
         'city': row['Source Airport City'],
@@ -183,7 +226,7 @@ for index, row in df.iterrows():
         'latitude': lat_u,
         'longitude': lon_u
     })
-    g.add_airport_info(v, {
+    g.infoAirport(v, {
         'code': row['Destination Airport Code'],
         'name': row['Destination Airport Name'],
         'city': row['Destination Airport City'],
@@ -202,10 +245,17 @@ for index, row in df.iterrows():
 
 
 conection, n_components = g.is_connected()
-print(f"Number of connected components: {len(n_components)}")
+#print(f"Number of connected components: {len(n_components)}")
 #print(g.L[1])
-print (g.weights_components(n_components))
+#print (g.weights_components(n_components))
+#print(g.mst_weight_per_component())
+# Example of calculating the MST
+#mst_weight, mst_edges = g.kruskal()
+#print(f"MST Weight: {mst_weight}")
+#print("MST Edges:", mst_edges)
 #print(n_components)
+#print(g.airport_data[3103])
+#print(g.Dijkstra(3103))
 #print(g.airport_data[2565], g.airport_data[2566])
 #mst_weight, mst_edges = g.kruskal()
 #print(mst_edges)

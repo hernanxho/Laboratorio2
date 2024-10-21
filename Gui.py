@@ -55,6 +55,20 @@ class GuiClass :
           self.startFrame(30,310)
           self.Peso=tk.Frame(self.mainFrame, bg="#FFFACD", highlightbackground="black", highlightthickness=2)
           self.Peso.place(x=0, y=0, width=1196, height=767)
+
+          self.Titulo = tk.Label(self.Peso, text = "PESO \n  GRAFO", highlightbackground="black", highlightthickness=2, font = ("Bold", 30) )
+          self.Titulo.place(x=1196 / 2, y=100, width= 500, height = 100,  anchor=tk.CENTER)
+
+          pesos = g.mst_weight_per_component()
+          peso_total = 0
+          for i in  range(1,8):
+                peso_total += pesos[i]     
+
+          print(pesos)
+          ms = "El peso total de los arbol de expansión mínima es:    " + str(peso_total)+ "\nEl peso del componente #1 del arbol de expansión mínima es" +  str(pesos[1]) + "\nEl peso del componente #2 del arbol de  expansión mínima es" +  str(pesos[2]) + "\nEl peso  del componente #3 del arbol de expansión mínima es" +  str(pesos [3]) + "\nEl peso del componente #4 del arbol de expansión mínima  es" +  str(pesos[4]) + "\nEl peso del componente #5  del arbol de expansión mínima es" +  str(pesos[5]) +  "\nEl peso del componente #6 del arbol de expansión mínima es" +    str(pesos[6]) + "\nEl peso del componente #7 del arbol  de expansión mínima es" +  str(pesos[7]) 
+
+          self.weight = tk.Label(self.Peso, text = ""+ ms, highlightbackground="black", highlightthickness=2, font = ("Arial", 19) )
+          self.weight.place(x=1196 / 2, y=450, width= 1000, height = 500,  anchor=tk.CENTER)
     
     def info(self):
           self.deletesFrame(self.mainFrame)
@@ -85,7 +99,8 @@ class GuiClass :
           self.infoAereopuerto=tk.Button(self.Codigo,text="Informacion \n aereopuerto",font = ("Bold", 15), command=lambda:self.mostrar_aeropuerto(self.codigotext.get()))
           self.infoAereopuerto.place(x=160,y=400,height=80,width=200)
           
-          self.infoCaminosAereopuertos=tk.Button(self.Codigo,text="Caminos \n aereopuertos",font = ("Bold", 15))
+          self.infoCaminosAereopuertos=tk.Button(self.Codigo,text="Caminos \n aereopuertos",font = ("Bold", 15),  command=lambda:self.mostrar_caminos_aeropuertos(self.codigotext.get()))
+
           self.infoCaminosAereopuertos.place(x=510,y=400,height=80,width=200)
           
           self.segundoCodigo = tk.Button(self.Codigo, text="Segundo vertice" ,font = ("Bold", 15), command= lambda: self.mostrarEntrada())
@@ -94,7 +109,7 @@ class GuiClass :
           self.codigotext2 = tk.Entry(self.Codigo,width=30, font=("Arial",40))
           self.codigotext2.place_forget()
 
-          self.mostrarCamino=tk.Button(self.Codigo,text="Mostar Camino \n minimo",font = ("Bold", 15))
+          self.mostrarCamino=tk.Button(self.Codigo,text="Mostar Camino \n minimo",font = ("Bold", 15), command= lambda: self.findMinPath(self.codigotext.get(),self.codigotext2.get()))
           self.mostrarCamino.place_forget()
 
           
@@ -110,7 +125,50 @@ class GuiClass :
     def mostrarEntrada(self):
           self.mostrarCamino.place(x=510,y=600,height=80,width=200)
           self.codigotext2.place(x=160,y=300)
-      
+
+    def mostrar_caminos_aeropuertos(self,code):
+            total_distances = g.Dijkstra(indexAirport[code])
+            distances = [(node, value[0]) for node, value in total_distances.items()]
+            # Step 2: Sort distances in descending order
+            distances.sort(key=lambda x: x[1], reverse=True)
+
+            # Step 3: Select the top 5 largest distances
+            ten_distances = distances[:10]
+
+            # Display the results
+            i=1
+            ms ="#AEROPUERTO MAS ALEJADO\n\n"
+
+            for node, distance in ten_distances:
+                  ms += (f"#{i}: Nombre: {g.dataGraph[node]['name']}, "
+                        f"Codigo: {g.dataGraph[node]['code']}, "
+                        f"Latitud: {g.dataGraph[node]['latitude']}, "
+                        f"Longitud: {g.dataGraph[node]['longitude']}, "
+                        f"Pais: {g.dataGraph[node]['country']}, "
+                        f"Ciudad: {g.dataGraph[node]['city']}, "
+                        f"Distancia {g.dataGraph[indexAirport[code]]['name']}: {distance}\n\n")
+                  i+=1
+            self.ten_label = messagebox.showinfo("10 aeropuertos mas alejados", ms)
+
+    def findMinPath(self, v1, v2):
+          paths =  g.Dijkstra(indexAirport[v1])
+          print(paths)
+          i=1
+          ms ="#AEROPUERTOS DEL CAMINO MINIMO\n\n"
+          if indexAirport[v2] in paths:
+            for airport in paths[indexAirport[v2]][1]:
+                        ms += (f"#{i}: Nombre: {g.dataGraph[airport]['name']}, "
+                              f"Codigo: {g.dataGraph[airport]['code']}, "
+                              f"Latitud: {g.dataGraph[airport]['latitude']}, "
+                              f"Longitud: {g.dataGraph[airport]['longitude']}, "
+                              f"Pais: {g.dataGraph[airport]['country']}, "
+                              f"Ciudad: {g.dataGraph[airport]['city']}\n\n")
+                        i+=1
+            self.minAirports = messagebox.showinfo("Camino  minimo", ms)
+            
+          else:
+            self.minAirports = messagebox.showerror("ERROR", "NO HAY CAMINO")
+
           
 
               
